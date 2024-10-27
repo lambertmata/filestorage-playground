@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"fsp"
+	"github.com/go-chi/cors"
 	"github.com/lambertmata/churro"
 	"log/slog"
 	"net"
@@ -65,7 +66,17 @@ func main() {
 	storage := fsp.NewLocalStorage(storagePath)
 	objects := fsp.NewObjectsHandler(storage)
 
-	r.Middlewares(LogRequests())
+	corsMiddleware := cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	})
+
+	r.Middlewares(corsMiddleware, LogRequests())
+
 	churro.Post(r, "/objects", objects.Put)
 	churro.Get(r, "/objects/{id}", objects.Get)
 	churro.Get(r, "/objects", objects.List)
